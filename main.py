@@ -5,13 +5,12 @@ import os
 
 app = Flask(__name__)
 
-# MAXIMUM PERMISSIVE CORS FOR TURBOWARP
+# Extremely permissive CORS for TurboWarp
 CORS(app, 
-     origins="*",
-     allow_headers=["*"],
+     origins="*", 
+     allow_headers=["*"], 
      methods=["GET", "POST", "OPTIONS"],
-     supports_credentials=True,
-     expose_headers=["*"])
+     supports_credentials=True)
 
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
@@ -22,7 +21,8 @@ model_name = "google/gemini-2.5-flash"
 
 @app.route('/chat', methods=['POST', 'OPTIONS'])
 def chat():
-    print("REQUEST RECEIVED - Method:", request.method)
+    print("=== REQUEST RECEIVED ===")
+    print("Method:", request.method)
     print("Origin:", request.headers.get('Origin'))
     print("Content-Type:", request.headers.get('Content-Type'))
 
@@ -33,7 +33,7 @@ def chat():
     data = request.get_json(force=True, silent=True)
     prompt = data.get('prompt', '').strip() if data else ""
 
-    print("Prompt:", prompt)
+    print("Prompt received:", prompt)
 
     if not prompt:
         return jsonify({"error": "No prompt"}), 400
@@ -47,7 +47,7 @@ def chat():
         )
         reply = response.choices[0].message.content.strip()
 
-        print("Reply:", reply)
+        print("Reply sent:", reply)
         return jsonify({"reply": reply})
 
     except Exception as e:
