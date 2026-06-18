@@ -5,15 +5,8 @@ import os
 
 app = Flask(__name__)
 
-# Allowed origins (add your links here)
-ALLOWED_ORIGINS = [
-    "https://turbowarp.org",
-    "https://*.turbowarp.org",
-    "http://localhost",
-    "http://127.0.0.1",
-]
-
-CORS(app, origins=ALLOWED_ORIGINS)
+# Allow everything for now (easier for testing)
+CORS(app, origins="*")
 
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
@@ -27,43 +20,33 @@ def chat():
     if request.method == 'OPTIONS':
         return '', 204
 
-    # === CLEAR SOURCE LOGGING ===
-    origin = request.headers.get('Origin')
-    referer = request.headers.get('Referer')
-    
-    print("=== NEW REQUEST RECEIVED ===")
-    print("Source / Origin :", origin)
-    print("Referer URL     :", referer)
-    print("------------------------")
+    origin = request.headers.get('Origin') or "Unknown"
+    print("=== REQUEST FROM:", origin)
 
     data = request.get_json(force=True, silent=True)
     prompt = data.get('prompt', '').strip() if data else ""
 
     if not prompt:
-        print("ERROR: No prompt received")
         return jsonify({"error": "No prompt"}), 400
 
-    print("Prompt received:", prompt)
-
-    messages = [{"role": "user", "content": prompt}]
+    print("Prompt:", prompt)
 
     try:
         response = client.chat.completions.create(
             model=model_name,
-            messages=messages,
+            messages=[{"role": "user", "content": prompt}],
             max_tokens=700,
             temperature=0.85,
         )
         reply = response.choices[0].message.content.strip()
 
-        print("Reply sent to TurboWarp:", reply)
-        print("=== REQUEST COMPLETE ===\n")
+        print("Reply:", reply)
         return jsonify({"reply": reply})
 
     except Exception as e:
-        print("ERROR:", str(e))
+        print("Error:", str(e))
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    print("Server started with clear source logging...")
+    print("Server started with open CORS...")
     app.run(host='0.0.0.0', port=5000)
