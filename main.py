@@ -5,8 +5,17 @@ import os
 
 app = Flask(__name__)
 
-# Open for now (we'll restrict later)
-CORS(app, origins="*")
+# ====================== YOUR ALLOW LIST ======================
+ALLOWED_ORIGINS = [
+    "https://turbowarp.org",
+    "https://*.turbowarp.org",
+    "http://localhost",
+    "http://127.0.0.1",
+    "https://aijudgement.onrender.com",   # your render url
+    # Add more links here as needed
+]
+
+CORS(app, origins=ALLOWED_ORIGINS)
 
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
@@ -20,16 +29,19 @@ def chat():
     if request.method == 'OPTIONS':
         return '', 204
 
-    # === BETTER SOURCE LOGGING ===
+    # === ALWAYS LOG THE SOURCE ===
     origin = request.headers.get('Origin')
     referer = request.headers.get('Referer')
-    user_agent = request.headers.get('User-Agent')
-
+    
     print("=== NEW REQUEST RECEIVED ===")
-    print(f"Origin  : {origin}")
-    print(f"Referer : {referer}")
-    print(f"User-Agent: {user_agent}")
+    print(f"Source Origin : {origin}")
+    print(f"Referer       : {referer}")
     print("------------------------")
+
+    # Check if allowed
+    if origin and not any(origin.startswith(allowed) or allowed.startswith(origin) for allowed in ALLOWED_ORIGINS):
+        print(f"⚠️  BLOCKED REQUEST from: {origin}")
+        return jsonify({"error": "Origin not allowed"}), 403
 
     data = request.get_json(force=True, silent=True)
     prompt = data.get('prompt', '').strip() if data else ""
@@ -57,5 +69,5 @@ def chat():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    print("Server started with detailed logging...")
+    print("Server started with allow list + full source logging...")
     app.run(host='0.0.0.0', port=5000)
