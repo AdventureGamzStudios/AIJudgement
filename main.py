@@ -2,11 +2,12 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from openai import OpenAI
 import os
+from datetime import datetime
 
 app = Flask(__name__)
 
-# Completely open CORS for now
-CORS(app, origins="*", allow_headers="*", methods=["GET", "POST", "OPTIONS"])
+# Allow all for now (you can restrict later)
+CORS(app, origins="*")
 
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
@@ -17,21 +18,27 @@ model_name = "google/gemini-2.5-flash"
 
 @app.route('/chat', methods=['POST', 'OPTIONS'])
 def chat():
-    print("=== REQUEST RECEIVED ===")
-    print("Method:", request.method)
-    print("Origin:", request.headers.get('Origin'))
-    print("Referer:", request.headers.get('Referer'))
-    print("Content-Type:", request.headers.get('Content-Type'))
-
     if request.method == 'OPTIONS':
         return '', 204
+
+    # === CLEAR AND DETAILED LOGGING ===
+    print("\n" + "="*60)
+    print(f"NEW REQUEST - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("="*60)
+    print(f"Source Origin     : {request.headers.get('Origin')}")
+    print(f"Referer URL       : {request.headers.get('Referer')}")
+    print(f"IP Address        : {request.remote_addr}")
+    print(f"User-Agent        : {request.headers.get('User-Agent')}")
+    print(f"Content-Type      : {request.headers.get('Content-Type')}")
+    print("-" * 40)
 
     data = request.get_json(force=True, silent=True)
     prompt = data.get('prompt', '').strip() if data else ""
 
-    print("Prompt received:", prompt)
+    print(f"Prompt Received   : {prompt}")
 
     if not prompt:
+        print("ERROR: No prompt received!")
         return jsonify({"error": "No prompt"}), 400
 
     try:
@@ -43,13 +50,15 @@ def chat():
         )
         reply = response.choices[0].message.content.strip()
 
-        print("Reply sent:", reply)
+        print(f"Reply Sent        : {reply}")
+        print("="*60 + "\n")
         return jsonify({"reply": reply})
 
     except Exception as e:
-        print("Error:", str(e))
+        print(f"ERROR: {str(e)}")
+        print("="*60 + "\n")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    print("Server started with maximum open CORS...")
+    print("Server started with detailed logging...")
     app.run(host='0.0.0.0', port=5000)
