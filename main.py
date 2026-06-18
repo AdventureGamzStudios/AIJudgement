@@ -4,7 +4,7 @@ from openai import OpenAI
 import os
 
 app = Flask(__name__)
-CORS(app, origins="*")  # Open for testing
+CORS(app, origins="*")   # Completely open for now
 
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
@@ -15,35 +15,32 @@ model_name = "google/gemini-2.5-flash"
 
 @app.route('/chat', methods=['POST', 'OPTIONS'])
 def chat():
-    print("\n🚀 === NEW REQUEST RECEIVED ===")
-    print("Origin:", request.headers.get('Origin'))
-    print("Referer:", request.headers.get('Referer'))
-    print("X-Forwarded-For:", request.headers.get('X-Forwarded-For'))
-    print("IP:", request.remote_addr)
+    print("REQUEST RECEIVED FROM:", request.headers.get('Origin') or request.headers.get('Referer') or "Unknown")
 
     data = request.get_json(force=True, silent=True)
     prompt = data.get('prompt', '').strip() if data else ""
 
-    print("Prompt received:", prompt)
+    print("PROMPT:", prompt)
 
     if not prompt:
-        print("❌ No prompt!")
         return jsonify({"error": "No prompt"}), 400
 
     try:
         response = client.chat.completions.create(
             model=model_name,
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=600,
+            max_tokens=700,
             temperature=0.85,
         )
         reply = response.choices[0].message.content.strip()
-        print("✅ Reply sent:", reply)
+
+        print("REPLY:", reply)
         return jsonify({"reply": reply})
+
     except Exception as e:
-        print("❌ Error:", str(e))
+        print("ERROR:", str(e))
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    print("Server running with full logging...")
+    print("Server is running...")
     app.run(host='0.0.0.0', port=5000)
