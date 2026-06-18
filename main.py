@@ -5,18 +5,8 @@ import os
 
 app = Flask(__name__)
 
-# ====================== ADD YOUR ALLOWED URLS HERE ======================
-ALLOWED_ORIGINS = [
-    "https://turbowarp.org",
-    "https://*.turbowarp.org",           # Allows all TurboWarp domains
-    "http://localhost",
-    "http://127.0.0.1",
-    "https://automatic-doodle-wrqwv566gpjp294p7-5000.app.github.dev",  # your old one
-    # Add your Render URL here when you get it:
-    # "https://your-project-name.onrender.com",
-]
-
-CORS(app, origins=ALLOWED_ORIGINS)
+# Allow everything for testing
+CORS(app, origins="*")
 
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
@@ -30,21 +20,16 @@ def chat():
     if request.method == 'OPTIONS':
         return '', 204
 
-    # Log every request with source
-    origin = request.headers.get('Origin') or request.headers.get('Referer') or "Unknown"
-    print("=== NEW REQUEST RECEIVED ===")
-    print(f"Source: {origin}")
-    print("Time:", os.popen('date').read().strip())
-    print("------------------------")
+    origin = request.headers.get('Origin') or "Unknown"
+    print("=== REQUEST FROM:", origin)
 
     data = request.get_json(force=True, silent=True)
     prompt = data.get('prompt', '').strip() if data else ""
 
-    if not prompt:
-        print("ERROR: No prompt received")
-        return jsonify({"error": "No prompt"}), 400
+    print("Prompt received:", prompt)
 
-    print("Prompt:", prompt)
+    if not prompt:
+        return jsonify({"error": "No prompt"}), 400
 
     try:
         response = client.chat.completions.create(
@@ -56,13 +41,12 @@ def chat():
         reply = response.choices[0].message.content.strip()
 
         print("Reply sent:", reply)
-        print("=== REQUEST COMPLETE ===\n")
         return jsonify({"reply": reply})
 
     except Exception as e:
-        print("ERROR:", str(e))
+        print("Error:", str(e))
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    print("Server started with URL whitelist and logging...")
+    print("Server started with open CORS...")
     app.run(host='0.0.0.0', port=5000)
