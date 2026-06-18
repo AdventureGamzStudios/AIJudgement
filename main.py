@@ -5,14 +5,12 @@ import os
 
 app = Flask(__name__)
 
-# List of allowed origins (you can add more)
+# Allowed origins (add your links here)
 ALLOWED_ORIGINS = [
     "https://turbowarp.org",
     "https://*.turbowarp.org",
     "http://localhost",
     "http://127.0.0.1",
-    # Add your Render link here later:
-    # "https://your-project.onrender.com",
 ]
 
 CORS(app, origins=ALLOWED_ORIGINS)
@@ -29,17 +27,23 @@ def chat():
     if request.method == 'OPTIONS':
         return '', 204
 
-    # === ALWAYS SHOW THE ORIGIN (even if blocked) ===
-    origin = request.headers.get('Origin') or request.headers.get('Referer') or "Unknown"
-    print("=== REQUEST RECEIVED FROM ===", origin)
+    # === CLEAR SOURCE LOGGING ===
+    origin = request.headers.get('Origin')
+    referer = request.headers.get('Referer')
+    
+    print("=== NEW REQUEST RECEIVED ===")
+    print("Source / Origin :", origin)
+    print("Referer URL     :", referer)
+    print("------------------------")
 
     data = request.get_json(force=True, silent=True)
     prompt = data.get('prompt', '').strip() if data else ""
 
     if not prompt:
+        print("ERROR: No prompt received")
         return jsonify({"error": "No prompt"}), 400
 
-    print("Prompt:", prompt)
+    print("Prompt received:", prompt)
 
     messages = [{"role": "user", "content": prompt}]
 
@@ -52,13 +56,14 @@ def chat():
         )
         reply = response.choices[0].message.content.strip()
 
-        print("Reply sent:", reply)
+        print("Reply sent to TurboWarp:", reply)
+        print("=== REQUEST COMPLETE ===\n")
         return jsonify({"reply": reply})
 
     except Exception as e:
-        print("Error:", str(e))
+        print("ERROR:", str(e))
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    print("Server started with origin logging...")
+    print("Server started with clear source logging...")
     app.run(host='0.0.0.0', port=5000)
