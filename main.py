@@ -4,7 +4,7 @@ from openai import OpenAI
 import os
 
 app = Flask(__name__)
-CORS(app, origins="*")   # Maximum open
+CORS(app, origins="*")
 
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
@@ -18,7 +18,6 @@ def chat():
     if request.method == 'OPTIONS':
         return '', 204
 
-    # Simple relay
     data = request.get_json(force=True, silent=True)
     prompt = data.get('prompt', '').strip() if data else ""
 
@@ -39,5 +38,5 @@ def chat():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    print("Simple relay server running...")
+    print("Simple server running...")
     app.run(host='0.0.0.0', port=5000)
