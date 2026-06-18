@@ -5,9 +5,7 @@ import os
 from datetime import datetime
 
 app = Flask(__name__)
-
-# Allow all for now (you can restrict later)
-CORS(app, origins="*")
+CORS(app, origins="*")  # Open for now
 
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
@@ -18,29 +16,36 @@ model_name = "google/gemini-2.5-flash"
 
 @app.route('/chat', methods=['POST', 'OPTIONS'])
 def chat():
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    print("\n" + "="*70)
+    print(f"🚀 NEW REQUEST - {timestamp}")
+    print("="*70)
+
+    # Source Information
+    print(f"Origin          : {request.headers.get('Origin')}")
+    print(f"Referer         : {request.headers.get('Referer')}")
+    print(f"IP Address      : {request.remote_addr}")
+    print(f"User-Agent      : {request.headers.get('User-Agent')}")
+    print(f"Content-Type    : {request.headers.get('Content-Type')}")
+
     if request.method == 'OPTIONS':
+        print("→ OPTIONS Preflight Request")
+        print("="*70 + "\n")
         return '', 204
 
-    # === CLEAR AND DETAILED LOGGING ===
-    print("\n" + "="*60)
-    print(f"NEW REQUEST - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print("="*60)
-    print(f"Source Origin     : {request.headers.get('Origin')}")
-    print(f"Referer URL       : {request.headers.get('Referer')}")
-    print(f"IP Address        : {request.remote_addr}")
-    print(f"User-Agent        : {request.headers.get('User-Agent')}")
-    print(f"Content-Type      : {request.headers.get('Content-Type')}")
-    print("-" * 40)
-
+    # Get the prompt
     data = request.get_json(force=True, silent=True)
     prompt = data.get('prompt', '').strip() if data else ""
 
-    print(f"Prompt Received   : {prompt}")
+    print(f"Prompt Received : {prompt}")
 
     if not prompt:
-        print("ERROR: No prompt received!")
+        print("❌ ERROR: No prompt received!")
+        print("="*70 + "\n")
         return jsonify({"error": "No prompt"}), 400
 
+    # Call AI
     try:
         response = client.chat.completions.create(
             model=model_name,
@@ -50,13 +55,13 @@ def chat():
         )
         reply = response.choices[0].message.content.strip()
 
-        print(f"Reply Sent        : {reply}")
-        print("="*60 + "\n")
+        print(f"AI Reply        : {reply}")
+        print("="*70 + "\n")
         return jsonify({"reply": reply})
 
     except Exception as e:
-        print(f"ERROR: {str(e)}")
-        print("="*60 + "\n")
+        print(f"❌ ERROR: {str(e)}")
+        print("="*70 + "\n")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
