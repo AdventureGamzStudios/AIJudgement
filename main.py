@@ -5,14 +5,14 @@ import os
 
 app = Flask(__name__)
 
-# === ADD YOUR ALLOWED LINKS HERE ===
+# List of allowed origins (you can add more)
 ALLOWED_ORIGINS = [
     "https://turbowarp.org",
-    "https://*.turbowarp.org",           # Allows all turbowarp subdomains
-    "http://localhost",                  # For local testing
+    "https://*.turbowarp.org",
+    "http://localhost",
     "http://127.0.0.1",
-    # Add more links below, for example:
-    # "https://your-project-name.onrender.com",
+    # Add your Render link here later:
+    # "https://your-project.onrender.com",
 ]
 
 CORS(app, origins=ALLOWED_ORIGINS)
@@ -29,8 +29,8 @@ def chat():
     if request.method == 'OPTIONS':
         return '', 204
 
-    # Show which website sent the request
-    origin = request.headers.get('Origin')
+    # === ALWAYS SHOW THE ORIGIN (even if blocked) ===
+    origin = request.headers.get('Origin') or request.headers.get('Referer') or "Unknown"
     print("=== REQUEST RECEIVED FROM ===", origin)
 
     data = request.get_json(force=True, silent=True)
